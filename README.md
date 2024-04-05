@@ -2,7 +2,9 @@
 
 `cifra` is an easy-to-use symmetric encryption command-line tool, using the robust AES-256 encryption standard.
 
-Available modes: Galois/Counter Mode (GCM) and Cipher Feedback Mode (CFB).
+Available modes:
+* Galois/Counter Mode (GCM)
+* Cipher Feedback Mode (CFB).
 
 ## Quick Start
 
@@ -29,7 +31,7 @@ $ ls
 data.txt  data.txt.cif  data.txt.cfb
 ```
 
-Decrypt both files
+Decrypt both files:
 ```console
 $ ./cifra -dec -o data.dec1 data.txt.cif
 Password:
