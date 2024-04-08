@@ -2,17 +2,47 @@ package symmetric
 
 import (
     "bytes"
+    "encoding/binary"
     "crypto/aes"
     "crypto/cipher"
     "crypto/rand"
+    "time"
 
     "github.com/jacastromad/cifra/keys"
-    "github.com/jacastromad/cifra/utils"
 )
+
+
+const NonceLen = 12
+
+
+// Generate a unique 12-byte nonce using a timestamp and a random value
+func generateNonce() []byte {
+    // Get the current time in nanoseconds since the Unix epoch
+    epochNano := time.Now().UnixNano()
+
+    // Convert the timestamp to a byte slice (8 bytes for i64)
+    buf := make([]byte, 8)
+    binary.BigEndian.PutUint64(buf, uint64(epochNano))
+
+    // Skip the two most significant bytes
+    timestampBytes := buf[2:]
+
+    // Generate 6 bytes of random data
+    randomBytes := make([]byte, 6)
+    if _, err := rand.Read(randomBytes); err != nil {
+        panic(err)
+    }
+
+    // Combine the timestamp and random bytes to form a 12-byte nonce
+    nonce := append(timestampBytes, randomBytes...)
+
+    return nonce
+}
+
 
 // Encrypts data using GCM. Returns salt+nonce+encrypted_data
 func EncGCM(data, pass []byte) ([]byte, error) {
-    nonce := utils.GenerateNonce()  // Number used once
+    nonce := generateNonce()  // Number used once
 
     key := keys.NewKey(pass)
 
@@ -36,8 +66,8 @@ func EncGCM(data, pass []byte) ([]byte, error) {
 // Expects salt+nonce+encrypted_data
 func DecGCM(fields, pass []byte) ([]byte, error) {
     salt := fields[:keys.SaltLen]
-    nonce := fields[keys.SaltLen:keys.SaltLen+utils.NonceLen]
-    encData := fields[keys.SaltLen+utils.NonceLen:]
+    nonce := fields[keys.SaltLen:keys.SaltLen+NonceLen]
+    encData := fields[keys.SaltLen+NonceLen:]
 
     key := keys.GenKey(pass, salt)
 
