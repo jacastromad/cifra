@@ -46,6 +46,8 @@ func main() {
     // Input and output filenames
     var iFilename string
     var oFilename string
+    // Read/Write base64
+    var b64 bool
     // Print help
     var help bool
 
@@ -53,6 +55,7 @@ func main() {
     flag.BoolVar(&gcm, "gcm", false, "Galois/Counter Mode")
     flag.BoolVar(&cfb, "cfb", false, "cipher feedback mode")
     flag.BoolVar(&dec, "dec", false, "Decrypt input file")
+    flag.BoolVar(&b64, "b64", false, "Read/Write data encoded as base64")
     flag.StringVar(&oFilename, "o", "", "Output file name")
     flag.BoolVar(&help, "help", false, "Print help")
     flag.Usage = printHelp
@@ -120,42 +123,39 @@ func main() {
     }
     fmt.Println()
 
-    // Read input file
-    bytes, err := os.ReadFile(iFilename)
-    if err != nil {
-        fmt.Printf("Error reading input file: %s\n", err)
-    }
-
     var data []byte
-    if gcm {
-        if dec {  // Decrypt with AES-GCM
+    if dec {  // Decrypt
+        // Read file to decrypt
+        bytes, err := utils.ReadFile(iFilename, b64)
+        if err != nil {
+            panic("Error reading input file: " + err.Error())
+        }
+        if gcm {  // GCM
             data, err = symmetric.DecGCM(bytes, pass)
-            if err != nil {
-                panic("Error while decrypting data: " + err.Error())
-            }
-        } else {  // Encrypt with AES-GCM
-            data, err = symmetric.EncGCM(bytes, pass)
-            if err != nil {
-                panic("Error while Encrypting data: " + err.Error())
-            }
-        }
-    } else if cfb {
-        if dec {  // Decrypt with AES-CFB
+        } else {  // CFB
             data, err = symmetric.DecCFB(bytes, pass)
-            if err != nil {
-                panic("Error while decrypting data: " + err.Error())
-            }
-        } else {  // Encrypt with AES-CFB
-            data, err = symmetric.EncCFB(bytes, pass)
-            if err != nil {
-                panic("Error while Encrypting data: " + err.Error())
-            }
         }
-    }
-    // Write enc/dec data to output file
-    err = os.WriteFile(oFilename, data, 0600) // rw for user only
-    if err != nil {
-        panic("Error writing file " + oFilename + ": " + err.Error())
+        if err != nil {
+            panic("Error while decrypting data: " + err.Error())
+        }
+        // Write the unencrypted data
+        err = utils.WriteFile(oFilename, data, 0600, false) // rw for user only
+    } else {  // Encrypt
+        // Read file to encrypt
+        bytes, err := utils.ReadFile(iFilename, false)
+        if err != nil {
+            panic("Error reading input file: " + err.Error())
+        }
+        if gcm {  // GCM
+            data, err = symmetric.EncGCM(bytes, pass)
+        } else {  // CFB
+            data, err = symmetric.EncCFB(bytes, pass)
+        }
+        if err != nil {
+            panic("Error while decrypting data: " + err.Error())
+        }
+        // Write the unencrypted data
+        err = utils.WriteFile(oFilename, data, 0600, b64) // rw for user only
     }
 
 }
