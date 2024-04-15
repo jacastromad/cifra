@@ -7,6 +7,7 @@ import (
     "crypto/cipher"
     "crypto/rand"
     "time"
+    "errors"
 
     "github.com/jacastromad/cifra/keys"
 )
@@ -65,6 +66,9 @@ func EncGCM(data, pass []byte) ([]byte, error) {
 // Decrypts the slice of bytes encrypted with EncGCM.
 // Expects salt+nonce+encrypted_data
 func DecGCM(fields, pass []byte) ([]byte, error) {
+    if len(fields) < keys.SaltLen+NonceLen {
+        return nil, errors.New("Corrupted data")
+    }
     salt := fields[:keys.SaltLen]
     nonce := fields[keys.SaltLen:keys.SaltLen+NonceLen]
     encData := fields[keys.SaltLen+NonceLen:]
@@ -115,6 +119,9 @@ func EncCFB(data, pass []byte) ([]byte, error) {
 // Decrypts the slice of bytes encrypted with EncCFB.
 // Expects salt+iv+encrypted_data
 func DecCFB(fields, pass []byte) ([]byte, error) {
+    if len(fields) < keys.SaltLen+aes.BlockSize {
+        return nil, errors.New("Corrupted data")
+    }
     salt := fields[:keys.SaltLen]
     iv := fields[keys.SaltLen:keys.SaltLen+aes.BlockSize]
     encData := fields[keys.SaltLen+aes.BlockSize:]
