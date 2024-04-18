@@ -4,6 +4,7 @@ package keys
 import (
     "crypto/rand"
     "crypto/sha512"
+    "fmt"
     "golang.org/x/crypto/pbkdf2"
 )
 
@@ -23,12 +24,12 @@ type key struct {
 
 
 // Key constructor. Returns a key struct with a random salt
-func NewKey(pass []byte) *key {
+func NewKey(pass []byte) (*key, error) {
     // Generate saltLen random bytes
     saltb := make([]byte, SaltLen)
     _, err := rand.Read(saltb)
     if err != nil {
-        panic("Can't generate a random salt for a new key: " + err.Error())
+        return nil, fmt.Errorf("NewKey: error generating random salt: %w", err)
     }
 
     keyb := pbkdf2.Key(pass, saltb, Iter, KeyLen, sha512.New)
@@ -38,7 +39,7 @@ func NewKey(pass []byte) *key {
         Salt: saltb,
     }
 
-    return &k
+    return &k, nil
 }
 
 

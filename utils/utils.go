@@ -1,12 +1,11 @@
 package utils
 
-
 import (
-    "os"
-    "io/fs"
     "encoding/base64"
+    "fmt"
+    "io/fs"
+    "os"
 )
-
 
 // Returns true if file exists
 func FileExists(filename string) bool {
@@ -40,12 +39,17 @@ func ReadFile(filename string, b64 bool) ([]byte, error) {
     rdata, err := os.ReadFile(filename)
 
     if err != nil {
-        panic("Error reading file: " + err.Error())
+        return nil, fmt.Errorf("ReadFile: error reading file: %w", err)
     }
 
     if b64 {
         b64str := string(rdata)
-        return base64.StdEncoding.DecodeString(b64str)
+        decbytes, err := base64.StdEncoding.DecodeString(b64str)
+        if err != nil {
+            return nil, fmt.Errorf("ReadFile: error decoding base64: %w", err)
+        } else {
+            return decbytes, nil
+        }
     } else {
         return rdata, nil
     }

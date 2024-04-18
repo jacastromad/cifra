@@ -2,12 +2,13 @@ package symmetric
 
 import (
     "bytes"
-    "encoding/binary"
     "crypto/aes"
     "crypto/cipher"
     "crypto/rand"
-    "time"
+    "encoding/binary"
     "errors"
+    "fmt"
+    "time"
 
     "github.com/jacastromad/cifra/keys"
 )
@@ -17,7 +18,7 @@ const NonceLen = 12
 
 
 // Generate a unique 12-byte nonce using a timestamp and a random value
-func generateNonce() []byte {
+func generateNonce() ([]byte, error) {
     // Get the current time in nanoseconds since the Unix epoch
     epochNano := time.Now().UnixNano()
 
@@ -31,30 +32,36 @@ func generateNonce() []byte {
     // Generate 6 bytes of random data
     randomBytes := make([]byte, 6)
     if _, err := rand.Read(randomBytes); err != nil {
-        panic(err)
+        return nil, err
     }
 
     // Combine the timestamp and random bytes to form a 12-byte nonce
     nonce := append(timestampBytes, randomBytes...)
 
-    return nonce
+    return nonce, nil
 }
 
 
 // Encrypts data using GCM. Returns salt+nonce+encrypted_data
 func EncGCM(data, pass []byte) ([]byte, error) {
-    nonce := generateNonce()  // Number used once
+    nonce, err := generateNonce()  // Number used once
+    if err != nil {
+        return nil, fmt.Errorf("EncGCM: error generating nonce: %w", err)
+    }
 
-    key := keys.NewKey(pass)
+    key, err := keys.NewKey(pass)
+    if err != nil {
+        return nil, fmt.Errorf("EncGCM: error generating key: %w", err)
+    }
 
     cBlock, err := aes.NewCipher(key.Bytes)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("EncGCM: error creating cipher.Block: %w", err)
     }
 
     aesgcm, err := cipher.NewGCM(cBlock)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("EncGCM: error wrapping cipher in GCM: %w", err)
     }
 
     encData := aesgcm.Seal(nil, nonce, data, nil)
@@ -77,17 +84,17 @@ func DecGCM(fields, pass []byte) ([]byte, error) {
 
     cBlock, err := aes.NewCipher(key.Bytes)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("DecGCM: error creating cipher.Block: %w", err)
     }
 
     aesgcm, err := cipher.NewGCM(cBlock)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("DecGCM: error wrapping cipher in GCM: %w", err)
     }
 
     data, err := aesgcm.Open(nil, nonce, encData, nil)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("DecGCM: error decypting ciphertext: %w", err)
     }
 
     return data, nil
@@ -98,14 +105,17 @@ func EncCFB(data, pass []byte) ([]byte, error) {
     iv := make([]byte, aes.BlockSize)
     _, err := rand.Read(iv)
     if err != nil {
-        panic("Can't generate a random IV: " + err.Error())
+        return nil, fmt.Errorf("EncCFB: error creating random IV: %w", err)
     }
 
-    key := keys.NewKey(pass)
+    key, err := keys.NewKey(pass)
+    if err != nil {
+        return nil, fmt.Errorf("EncCFB: error generating key: %w", err)
+    }
 
     cBlock, err := aes.NewCipher(key.Bytes)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("EncCFB: error creating cipher.Block: %w", err)
     }
 
     aescfb := cipher.NewCFBEncrypter(cBlock, iv)
@@ -130,7 +140,7 @@ func DecCFB(fields, pass []byte) ([]byte, error) {
 
     cBlock, err := aes.NewCipher(key.Bytes)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("DecCFB: error creating cipher.Block: %w", err)
     }
 
     aescfb := cipher.NewCFBDecrypter(cBlock, iv)

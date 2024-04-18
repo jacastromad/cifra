@@ -17,7 +17,10 @@ func TestNewKey(t *testing.T) {
     }
 
     for _, pass := range passwords {
-        key := NewKey(pass)
+        key, err := NewKey(pass)
+        if err != nil {
+            t.Errorf("Error generating Key: %s", err)
+        }
         // Test that salt is generated and has the correct length
         if len(key.Salt) != SaltLen {
             t.Errorf("Expected salt length of %d, got %d", SaltLen, len(key.Salt))
@@ -47,8 +50,11 @@ func TestGenKey(t *testing.T) {
         []byte("  "),
     }
 
-    for i, _ := range plist1 {
-        k1 := NewKey(plist1[i])
+    for i := range plist1 {
+        k1, err := NewKey(plist1[i])
+        if err != nil {
+            t.Errorf("Error generating Key: %s", err)
+        }
         k2 := GenKey(plist1[i], k1.Salt)
         k3 := GenKey(plist2[i], k1.Salt)
         // Check that the provided salt is used

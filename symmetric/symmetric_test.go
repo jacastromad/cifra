@@ -7,7 +7,10 @@ import (
 )
 
 func TestGenerateNonce(t *testing.T) {
-    nonce := generateNonce()
+    nonce, err := generateNonce()
+    if err != nil {
+        t.Errorf("Error generating nonce: %s", err)
+    }
     if len(nonce) != NonceLen {
         t.Errorf("Expected nonce to be %d bytes long, got %d", NonceLen, len(nonce))
     }
