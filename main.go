@@ -9,7 +9,6 @@ import (
 
     "github.com/jacastromad/cifra/symmetric"
     "github.com/jacastromad/cifra/utils"
-    "golang.org/x/term"
 )
 
 
@@ -116,7 +115,7 @@ func main() {
 
     // Ask for password
     fmt.Print("Password: ")
-    pass, err := term.ReadPassword(int(syscall.Stdin))
+    pass, err := readPassword(int(syscall.Stdin))
     if err != nil {
         fmt.Println(err)
         os.Exit(1)
