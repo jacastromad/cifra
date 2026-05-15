@@ -1,6 +1,6 @@
 # cifra: A simple symmetric encryption tool
 
-`cifra` is an easy-to-use symmetric encryption command-line tool, using the robust AES-256 encryption standard.
+An easy-to-use symmetric encryption command-line tool, using the AES-256 encryption standard.
 
 Available modes:
 * Galois/Counter Mode (GCM)
